@@ -162,7 +162,7 @@ impl<'a> Chart<'a> {
         write!(f, " xmlns='http://www.w3.org/1999/xhtml'")?;
         write!(f, " type='text/css'")?;
         write!(f, " rel='stylesheet'")?;
-        writeln!(f, " href='./css/splot.css' />")
+        writeln!(f, " href='./css/splotch.css' />")
     }
 
     fn defs(&self, f: &mut fmt::Formatter) -> fmt::Result {

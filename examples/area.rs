@@ -1,4 +1,4 @@
-use splot::{plot, Chart, Domain, Page};
+use splotch::{plot, Chart, Domain, Page};
 
 fn main() {
     let data_a = vec![(13, 74), (111, 37), (125, 52), (190, 66)];

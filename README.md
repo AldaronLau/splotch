@@ -1,11 +1,4 @@
-# splot
+# Splotch
+Plot data in footile
 
-Plot data to HTML
-
-[Documentation](https://docs.rs/splot)
-
-Project goals:
-
-- Simple but powerful API
-- Styling using CSS
-- Usable in WebAssembly
+[Documentation](https://docs.rs/splotch)

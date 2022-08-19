@@ -140,7 +140,7 @@ impl<'a> fmt::Display for Page<'a> {
         writeln!(f, "<html>")?;
         writeln!(f, "<head>")?;
         writeln!(f, "<meta charset='UTF-8'>")?;
-        writeln!(f, "<link href='./css/splot.css' rel='stylesheet'/>")?;
+        writeln!(f, "<link href='./css/splotch.css' rel='stylesheet'/>")?;
         writeln!(f, "</head>")?;
         writeln!(f, "<body>")?;
         writeln!(f, "<div class='page'>")?;
