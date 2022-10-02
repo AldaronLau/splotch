@@ -5,9 +5,11 @@
 //
 use std::fmt;
 
+use pointy::{BBox, Pt};
+
 use crate::{
     axis::Axis,
-    page::{AspectRatio, Edge, Rect},
+    page::{AspectRatio, Edge},
     plot::Plot,
     text::{Anchor, Text},
 };
@@ -94,7 +96,7 @@ impl Title {
         self
     }
 
-    fn display(&self, f: &mut fmt::Formatter, rect: Rect) -> fmt::Result {
+    fn display(&self, f: &mut fmt::Formatter, rect: BBox<f32>) -> fmt::Result {
         let text = Text::new(self.edge)
             .with_rect(rect)
             .with_anchor(self.anchor)
@@ -158,7 +160,14 @@ impl<'a> Chart<'a> {
             write!(f, " xmlns='http://www.w3.org/2000/svg'")?;
         }
         write!(f, " viewBox='")?;
-        writeln!(f, "{} {} {} {}'>", rect.x, rect.y, rect.width, rect.height)
+        writeln!(
+            f,
+            "{} {} {} {}'>",
+            rect.x_min(),
+            rect.y_min(),
+            rect.x_span(),
+            rect.y_span()
+        )
     }
 
     fn link(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -181,16 +190,16 @@ impl<'a> Chart<'a> {
         }
         let area = self.area();
         writeln!(f, "<clipPath id='clip-chart'>")?;
-        write!(f, "<rect x='{}' y='{}'", area.x, area.y)?;
-        writeln!(f, " width='{}' height='{}'/>", area.width, area.height)?;
+        write!(f, "<rect x='{}' y='{}'", area.x_min(), area.y_min())?;
+        writeln!(f, " width='{}' height='{}'/>", area.x_span(), area.y_span())?;
         writeln!(f, "</clipPath>")?;
         writeln!(f, "</defs>")
     }
 
     fn body(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut area = self.aspect_ratio.rect().inset(40);
+        let mut area = inset(self.aspect_ratio.rect(), 40);
         for title in &self.titles {
-            let rect = area.split(title.edge, 100);
+            let rect = title.edge.split(&mut area, 100.0);
             title.display(f, rect)?;
         }
         let mut axis_rects = vec![];
@@ -211,10 +220,10 @@ impl<'a> Chart<'a> {
         writeln!(f, "</svg>")
     }
 
-    fn area(&self) -> Rect {
-        let mut area = self.aspect_ratio.rect().inset(40);
+    fn area(&self) -> BBox<f32> {
+        let mut area = inset(self.aspect_ratio.rect(), 40);
         for title in &self.titles {
-            area.split(title.edge, 100);
+            title.edge.split(&mut area, 100.0);
         }
         for axis in &self.axes {
             axis.split(&mut area);
@@ -245,4 +254,17 @@ impl<'a> fmt::Display for Chart<'a> {
         self.defs(f)?;
         self.body(f)
     }
+}
+
+/// Inset bounding box
+fn inset(bbox: BBox<f32>, value: u16) -> BBox<f32> {
+    // unwrap: Always 2
+    let mut iter = bbox.into_iter();
+    let mut min = iter.next().unwrap();
+    let mut max = iter.next().unwrap();
+
+    min = min + Pt::from(f32::from(value));
+    max = max - Pt::from(f32::from(value));
+
+    BBox::from([min, max])
 }

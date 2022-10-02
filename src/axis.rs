@@ -13,7 +13,7 @@ use std::fmt;
 use pointy::BBox;
 
 use crate::{
-    page::{Edge, Rect},
+    page::Edge,
     scale::{sealed::Scale, Numeric},
     text::{Anchor, Label, Text, Tick},
 };
@@ -22,20 +22,20 @@ use crate::{
 mod sealed {
     use std::fmt;
 
-    use crate::page::Rect;
+    use pointy::BBox;
 
     pub trait Axis {
-        fn split(&self, area: &mut Rect) -> Rect;
+        fn split(&self, area: &mut BBox<f32>) -> BBox<f32>;
         fn display(
             &self,
             f: &mut fmt::Formatter,
-            rect: Rect,
-            area: Rect,
+            rect: BBox<f32>,
+            area: BBox<f32>,
         ) -> fmt::Result;
         fn display_grid(
             &self,
             f: &mut fmt::Formatter,
-            area: Rect,
+            area: BBox<f32>,
         ) -> fmt::Result;
     }
 }
@@ -66,19 +66,19 @@ pub struct Vertical {
 }
 
 impl sealed::Axis for Horizontal {
-    fn split(&self, area: &mut Rect) -> Rect {
-        area.split(self.edge, self.space())
+    fn split(&self, area: &mut BBox<f32>) -> BBox<f32> {
+        self.edge.split(area, f32::from(self.space()))
     }
 
     fn display(
         &self,
         f: &mut fmt::Formatter,
-        mut rect: Rect,
-        area: Rect,
+        mut rect: BBox<f32>,
+        area: BBox<f32>,
     ) -> fmt::Result {
-        rect.intersect_horiz(&area);
+        intersect_horiz(&mut rect, &area);
         if let Some(name) = &self.name {
-            let r = rect.split(self.edge, self.space() / 2);
+            let r = self.edge.split(&mut rect, f32::from(self.space() / 2));
             let text =
                 Text::new(self.edge).with_rect(r).with_class_name("axis");
             text.display(f)?;
@@ -89,11 +89,15 @@ impl sealed::Axis for Horizontal {
         self.display_tick_labels(f, rect)
     }
 
-    fn display_grid(&self, f: &mut fmt::Formatter, area: Rect) -> fmt::Result {
+    fn display_grid(
+        &self,
+        f: &mut fmt::Formatter,
+        area: BBox<f32>,
+    ) -> fmt::Result {
         write!(f, "<path class='grid-x' d='")?;
         for tick in self.ticks.iter() {
-            let x = tick.x(self.edge, area, 0);
-            write!(f, "M{} {}v{}", x, area.y, area.height)?;
+            let x = tick.x(self.edge, area, 0.0);
+            write!(f, "M{} {}v{}", x, area.y_min(), area.y_span())?;
         }
         writeln!(f, "'/>")
     }
@@ -141,18 +145,24 @@ impl Horizontal {
     fn display_tick_lines(
         &self,
         f: &mut fmt::Formatter,
-        rect: Rect,
+        rect: BBox<f32>,
     ) -> fmt::Result {
-        let x = rect.x;
+        let x = rect.x_min();
         let (y, height) = match self.edge {
-            Edge::Top => (rect.bottom(), Tick::LEN),
-            Edge::Bottom => (rect.y, -Tick::LEN),
+            Edge::Top => (rect.y_max(), Tick::LEN),
+            Edge::Bottom => (rect.y_min(), -Tick::LEN),
             _ => unreachable!(),
         };
-        write!(f, "<path class='axis-line' d='M{} {}h{}", x, y, rect.width)?;
+        write!(
+            f,
+            "<path class='axis-line' d='M{} {}h{}",
+            x,
+            y,
+            rect.x_span()
+        )?;
         for tick in self.ticks.iter() {
-            let x = tick.x(self.edge, rect, Tick::LEN);
-            let y = tick.y(self.edge, rect, Tick::LEN);
+            let x = tick.x(self.edge, rect, Tick::LEN as f32) as i32;
+            let y = tick.y(self.edge, rect, Tick::LEN as f32) as i32;
             let y0 = y.min(y + height);
             let h = y.max(y + height) - y0;
             write!(f, "M{} {}v{}", x, y0, h)?;
@@ -163,7 +173,7 @@ impl Horizontal {
     fn display_tick_labels(
         &self,
         f: &mut fmt::Formatter,
-        rect: Rect,
+        rect: BBox<f32>,
     ) -> fmt::Result {
         let text = Text::new(Edge::Top).with_class_name("tick");
         text.display(f)?;
@@ -175,19 +185,19 @@ impl Horizontal {
 }
 
 impl sealed::Axis for Vertical {
-    fn split(&self, area: &mut Rect) -> Rect {
-        area.split(self.edge, self.space())
+    fn split(&self, area: &mut BBox<f32>) -> BBox<f32> {
+        self.edge.split(area, self.space().into())
     }
 
     fn display(
         &self,
         f: &mut fmt::Formatter,
-        mut rect: Rect,
-        area: Rect,
+        mut rect: BBox<f32>,
+        area: BBox<f32>,
     ) -> fmt::Result {
-        rect.intersect_vert(&area);
+        intersect_vert(&mut rect, &area);
         if let Some(name) = &self.name {
-            let r = rect.split(self.edge, self.space() / 2);
+            let r = self.edge.split(&mut rect, f32::from(self.space() / 2));
             let text =
                 Text::new(self.edge).with_rect(r).with_class_name("axis");
             text.display(f)?;
@@ -198,11 +208,15 @@ impl sealed::Axis for Vertical {
         self.display_tick_labels(f, rect)
     }
 
-    fn display_grid(&self, f: &mut fmt::Formatter, area: Rect) -> fmt::Result {
+    fn display_grid(
+        &self,
+        f: &mut fmt::Formatter,
+        area: BBox<f32>,
+    ) -> fmt::Result {
         write!(f, "<path class='grid-y' d='")?;
         for tick in self.ticks.iter() {
-            let y = tick.y(self.edge, area, 0);
-            write!(f, "M{} {}h{}", area.x, y, area.width)?;
+            let y = tick.y(self.edge, area, 0.0);
+            write!(f, "M{} {}h{}", area.x_min(), y, area.x_span())?;
         }
         writeln!(f, "'/>")
     }
@@ -250,18 +264,18 @@ impl Vertical {
     fn display_tick_lines(
         &self,
         f: &mut fmt::Formatter,
-        rect: Rect,
+        rect: BBox<f32>,
     ) -> fmt::Result {
         let (x, width) = match self.edge {
-            Edge::Left => (rect.right(), Tick::LEN),
-            Edge::Right => (rect.x, -Tick::LEN),
+            Edge::Left => (rect.x_max(), Tick::LEN),
+            Edge::Right => (rect.x_min(), -Tick::LEN),
             _ => unreachable!(),
         };
         write!(f, "<path class='axis-line'")?;
-        write!(f, " d='M{} {}v{}", x, rect.y, rect.height)?;
+        write!(f, " d='M{} {}v{}", x, rect.y_min(), rect.y_span())?;
         for tick in self.ticks.iter() {
-            let x = tick.x(self.edge, rect, Tick::LEN);
-            let y = tick.y(self.edge, rect, Tick::LEN);
+            let x = tick.x(self.edge, rect, Tick::LEN as f32) as i32;
+            let y = tick.y(self.edge, rect, Tick::LEN as f32) as i32;
             let x0 = x.min(x + width);
             let w = x.max(x + width) - x0;
             write!(f, " M{} {}h{}", x0, y, w)?;
@@ -272,7 +286,7 @@ impl Vertical {
     fn display_tick_labels(
         &self,
         f: &mut fmt::Formatter,
-        rect: Rect,
+        rect: BBox<f32>,
     ) -> fmt::Result {
         let anchor = match self.edge {
             Edge::Left => Anchor::End,
@@ -288,4 +302,18 @@ impl Vertical {
         }
         text.display_done(f)
     }
+}
+
+fn intersect_horiz(this: &mut BBox<f32>, rhs: &BBox<f32>) {
+    *this = BBox::new([
+        (this.x_min().max(rhs.x_min()), this.y_min()),
+        (this.x_max().min(rhs.x_max()), this.y_max()),
+    ]);
+}
+
+fn intersect_vert(this: &mut BBox<f32>, rhs: &BBox<f32>) {
+    *this = BBox::new([
+        (this.x_min(), this.y_min().max(rhs.y_min())),
+        (this.x_max(), this.y_max().min(rhs.y_max())),
+    ]);
 }

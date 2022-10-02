@@ -5,6 +5,8 @@
 //
 use std::fmt;
 
+use pointy::BBox;
+
 use crate::chart::Chart;
 
 /// Page aspect ratio
@@ -27,13 +29,59 @@ pub enum Edge {
     Right,
 }
 
-/// Rendering rectangle
-#[derive(Clone, Copy)]
-pub struct Rect {
-    pub x: i32,
-    pub y: i32,
-    pub width: u16,
-    pub height: u16,
+impl Edge {
+    pub fn split(self, rect: &mut BBox<f32>, value: f32) -> BBox<f32> {
+        match self {
+            Edge::Top => {
+                let y = rect.y_min();
+                let height = rect.y_span() - value;
+                let h = rect.y_span() - height;
+
+                *rect = BBox::new([
+                    (rect.x_min(), rect.y_min() + h),
+                    (rect.x_max(), rect.y_max()),
+                ]);
+
+                BBox::new([(rect.x_min(), y), (rect.x_max(), y + h)])
+            }
+            Edge::Left => {
+                let x = rect.x_min();
+                let width = rect.x_span() - value;
+                let w = rect.x_span() - width;
+
+                *rect = BBox::new([
+                    (rect.x_min() + w, rect.y_min()),
+                    (rect.x_max(), rect.y_max()),
+                ]);
+
+                BBox::new([(x, rect.y_min()), (x + w, rect.y_max())])
+            }
+            Edge::Bottom => {
+                let height = rect.y_span() - value;
+                let h = rect.y_span() - height;
+                let y = rect.y_min() + height;
+
+                *rect = BBox::new([
+                    (rect.x_min(), rect.y_min()),
+                    (rect.x_max(), rect.y_min() + height),
+                ]);
+
+                BBox::new([(rect.x_min(), y), (rect.x_max(), y + h)])
+            }
+            Edge::Right => {
+                let width = rect.x_span() - value;
+                let w = rect.x_span() - width;
+                let x = rect.x_min() + width;
+
+                *rect = BBox::new([
+                    (rect.x_min(), rect.y_min()),
+                    (rect.x_min() + width, rect.y_max()),
+                ]);
+
+                BBox::new([(x, rect.y_min()), (x + w, rect.y_max())])
+            }
+        }
+    }
 }
 
 /// Page to render charts
@@ -47,90 +95,12 @@ pub struct Page<'a> {
 }
 
 impl AspectRatio {
-    pub(crate) fn rect(self) -> Rect {
+    pub(crate) fn rect(self) -> BBox<f32> {
         match self {
-            AspectRatio::Landscape => Rect::new(0, 0, 2000, 1500),
-            AspectRatio::Square => Rect::new(0, 0, 2000, 2000),
-            AspectRatio::Portrait => Rect::new(0, 0, 1500, 2000),
+            AspectRatio::Landscape => BBox::new([(0.0, 0.0), (2000.0, 1500.0)]),
+            AspectRatio::Square => BBox::new([(0.0, 0.0), (2000.0, 2000.0)]),
+            AspectRatio::Portrait => BBox::new([(0.0, 0.0), (1500.0, 2000.0)]),
         }
-    }
-}
-
-impl Rect {
-    pub fn new(x: i32, y: i32, width: u16, height: u16) -> Self {
-        Self {
-            x,
-            y,
-            width,
-            height,
-        }
-    }
-
-    pub fn right(&self) -> i32 {
-        self.x + i32::from(self.width)
-    }
-
-    pub fn bottom(&self) -> i32 {
-        self.y + i32::from(self.height)
-    }
-
-    pub fn inset(mut self, value: u16) -> Self {
-        let vi = i32::from(value);
-        self.x += vi;
-        self.y += vi;
-        let v2 = 2 * value;
-        self.width = self.width.saturating_sub(v2);
-        self.height = self.height.saturating_sub(v2);
-        self
-    }
-
-    pub fn split(&mut self, edge: Edge, value: u16) -> Self {
-        match edge {
-            Edge::Top => {
-                let y = self.y;
-                let height = self.height.saturating_sub(value);
-                let h = self.height - height;
-                self.y += h as i32;
-                self.height = height;
-                Rect::new(self.x, y, self.width, h)
-            }
-            Edge::Left => {
-                let x = self.x;
-                let width = self.width.saturating_sub(value);
-                let w = self.width - width;
-                self.x += w as i32;
-                self.width = width;
-                Rect::new(x, self.y, w, self.height)
-            }
-            Edge::Bottom => {
-                let height = self.height.saturating_sub(value);
-                let h = self.height - height;
-                let y = self.y + i32::from(height);
-                self.height = height;
-                Rect::new(self.x, y, self.width, h)
-            }
-            Edge::Right => {
-                let width = self.width.saturating_sub(value);
-                let w = self.width - width;
-                let x = self.x + i32::from(width);
-                self.width = width;
-                Rect::new(x, self.y, w, self.height)
-            }
-        }
-    }
-
-    pub fn intersect_horiz(&mut self, rhs: &Rect) {
-        let x = self.x.max(rhs.x);
-        let x2 = self.right().min(rhs.right());
-        self.x = x;
-        self.width = (x2 - x) as u16;
-    }
-
-    pub fn intersect_vert(&mut self, rhs: &Rect) {
-        let y = self.y.max(rhs.y);
-        let y2 = self.bottom().min(rhs.bottom());
-        self.y = y;
-        self.height = (y2 - y) as u16;
     }
 }
 

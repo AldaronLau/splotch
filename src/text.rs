@@ -9,7 +9,9 @@
 
 use std::fmt;
 
-use crate::page::{Edge, Rect};
+use pointy::BBox;
+
+use crate::page::Edge;
 
 /// Text label point
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -55,7 +57,7 @@ pub struct Label {
 pub struct Text<'a> {
     edge: Edge,
     anchor: Anchor,
-    rect: Option<Rect>,
+    rect: Option<BBox<f32>>,
     dy: Option<f32>,
     class_name: Option<&'a str>,
 }
@@ -171,7 +173,7 @@ impl<'a> Text<'a> {
         self
     }
 
-    pub fn with_rect(mut self, rect: Rect) -> Self {
+    pub fn with_rect(mut self, rect: BBox<f32>) -> Self {
         self.rect = Some(rect);
         self
     }
@@ -199,22 +201,28 @@ impl<'a> Text<'a> {
         writeln!(f, "</text>")
     }
 
-    fn transform(&self, f: &mut fmt::Formatter, rect: Rect) -> fmt::Result {
+    fn transform(
+        &self,
+        f: &mut fmt::Formatter,
+        rect: BBox<f32>,
+    ) -> fmt::Result {
         let x = match (self.edge, self.anchor) {
             (Edge::Top, Anchor::Start) | (Edge::Bottom, Anchor::Start) => {
-                rect.x
+                rect.x_min() as i32
             }
             (Edge::Top, Anchor::End) | (Edge::Bottom, Anchor::End) => {
-                rect.right()
+                rect.x_max() as i32
             }
-            _ => rect.x + i32::from(rect.width) / 2,
+            _ => rect.x_min() as i32 + (rect.x_span() as i32) / 2,
         };
         let y = match (self.edge, self.anchor) {
-            (Edge::Left, Anchor::End) | (Edge::Right, Anchor::Start) => rect.y,
-            (Edge::Left, Anchor::Start) | (Edge::Right, Anchor::End) => {
-                rect.bottom()
+            (Edge::Left, Anchor::End) | (Edge::Right, Anchor::Start) => {
+                rect.y_min() as i32
             }
-            _ => rect.y + i32::from(rect.height) / 2,
+            (Edge::Left, Anchor::Start) | (Edge::Right, Anchor::End) => {
+                rect.y_max() as i32
+            }
+            _ => rect.y_min() as i32 + (rect.y_span() as i32) / 2,
         };
         write!(f, " transform='translate({} {})", x, y)?;
         match self.edge {
@@ -284,25 +292,25 @@ impl Tick {
         &self.text
     }
 
-    pub fn x(&self, edge: Edge, rect: Rect, len: i32) -> i32 {
+    pub fn x(&self, edge: Edge, rect: BBox<f32>, len: f32) -> f32 {
         match edge {
-            Edge::Left => rect.right() - len,
-            Edge::Right => rect.x + len,
-            _ => rect.x + (self.value * rect.width as f32).round() as i32,
+            Edge::Left => rect.x_max() - len,
+            Edge::Right => rect.x_min() + len,
+            _ => self.value * rect.x_span() + rect.x_min(),
         }
     }
 
-    pub fn y(&self, edge: Edge, rect: Rect, len: i32) -> i32 {
+    pub fn y(&self, edge: Edge, rect: BBox<f32>, len: f32) -> f32 {
         match edge {
-            Edge::Top => rect.bottom() - len,
-            Edge::Bottom => rect.y + len,
-            _ => rect.y + (self.value * rect.height as f32).round() as i32,
+            Edge::Top => rect.y_max() - len,
+            Edge::Bottom => rect.y_min() + len,
+            _ => self.value * rect.y_span() + rect.y_min(),
         }
     }
 
-    pub fn tspan(&self, edge: Edge, rect: Rect) -> Tspan {
-        let x = self.x(edge, rect, Tick::HLEN);
-        let y = self.y(edge, rect, Tick::VLEN);
+    pub fn tspan(&self, edge: Edge, rect: BBox<f32>) -> Tspan {
+        let x = self.x(edge, rect, Tick::HLEN as f32) as i32;
+        let y = self.y(edge, rect, Tick::VLEN as f32) as i32;
         Tspan::new(self.text()).x(x).y(y).dy(0.33)
     }
 }

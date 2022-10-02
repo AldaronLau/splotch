@@ -8,16 +8,13 @@ use std::fmt;
 
 use pointy::{BBox, Pt};
 
-use crate::{
-    page::Rect,
-    scale::{sealed::Scale as _, Numeric},
-};
+use crate::scale::{sealed::Scale as _, Numeric};
 
 /// Private module for sealed Plot trait
 mod sealed {
     use std::fmt;
 
-    use crate::page::Rect;
+    use pointy::BBox;
 
     pub trait Plot {
         fn name(&self) -> &str;
@@ -25,7 +22,7 @@ mod sealed {
             &self,
             f: &mut fmt::Formatter,
             num: usize,
-            rect: Rect,
+            rect: BBox<f32>,
         ) -> fmt::Result;
     }
 }
@@ -73,7 +70,7 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Area<'a, P> {
         &self,
         f: &mut fmt::Formatter,
         num: usize,
-        rect: Rect,
+        rect: BBox<f32>,
     ) -> fmt::Result {
         write!(f, "<path class='plot-{} plot-area' d='", num)?;
         if let Some(pt) = self.data.first().cloned() {
@@ -114,7 +111,7 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Line<'a, P> {
         &self,
         f: &mut fmt::Formatter,
         num: usize,
-        rect: Rect,
+        rect: BBox<f32>,
     ) -> fmt::Result {
         write!(f, "<path class='plot-{} plot-line' d='", num)?;
         for (i, pt) in self.data.iter().cloned().enumerate() {
@@ -149,7 +146,7 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Scatter<'a, P> {
         &self,
         f: &mut fmt::Formatter,
         num: usize,
-        rect: Rect,
+        rect: BBox<f32>,
     ) -> fmt::Result {
         write!(f, "<path class='plot-{} plot-scatter' d='", num)?;
         for (i, pt) in self.data.iter().cloned().enumerate() {
@@ -186,17 +183,17 @@ fn y_norm(domain: BBox<f32>, y: f32) -> f32 {
 }
 
 /// Map an `X` value to a rectangle
-pub(crate) fn x_map(domain: &BBox<f32>, x: f32, rect: Rect) -> i32 {
-    let rx = rect.x as f32;
-    let rw = f32::from(rect.width);
+pub(crate) fn x_map(domain: &BBox<f32>, x: f32, rect: BBox<f32>) -> i32 {
+    let rx = rect.x_min();
+    let rw = rect.x_span();
     let mx = rx + rw * x_norm(*domain, x);
     mx.round() as i32
 }
 
 /// Map a `Y` value to a rectangle
-pub(crate) fn y_map(domain: &BBox<f32>, y: f32, rect: Rect) -> i32 {
-    let ry = rect.y as f32;
-    let rh = f32::from(rect.height);
+pub(crate) fn y_map(domain: &BBox<f32>, y: f32, rect: BBox<f32>) -> i32 {
+    let ry = rect.y_min();
+    let rh = rect.y_span();
     let my = ry + rh * y_norm(*domain, y);
     my.round() as i32
 }
