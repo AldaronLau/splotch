@@ -1,12 +1,17 @@
 // text.rs
 //
 // Copyright (c) 2021  Douglas P Lau
+// Copyright (c) 2022  Jeron A Lau
 //
+
+// FIXME
+#![allow(dead_code)]
+
 use crate::page::{Edge, Rect};
 use std::fmt;
 
 /// Text label point
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LabelPoint {
     /// Minimum point (start of bar/column)
     Minimum,
@@ -17,7 +22,7 @@ pub enum LabelPoint {
 }
 
 /// Vertical offset relative to point
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VerticalOffset {
     /// Label below point
     Below,
@@ -28,7 +33,7 @@ pub enum VerticalOffset {
 }
 
 /// Text anchor
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Anchor {
     /// Anchor at start of text
     Start,
@@ -38,7 +43,7 @@ pub enum Anchor {
     End,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Label {
     point: LabelPoint,
     offset: VerticalOffset,
@@ -278,15 +283,15 @@ impl Tick {
     }
     pub fn x(&self, edge: Edge, rect: Rect, len: i32) -> i32 {
         match edge {
-            Edge::Left => (rect.right() - len),
-            Edge::Right => (rect.x + len),
+            Edge::Left => rect.right() - len,
+            Edge::Right => rect.x + len,
             _ => rect.x + (self.value * rect.width as f32).round() as i32,
         }
     }
     pub fn y(&self, edge: Edge, rect: Rect, len: i32) -> i32 {
         match edge {
-            Edge::Top => (rect.bottom() - len),
-            Edge::Bottom => (rect.y + len),
+            Edge::Top => rect.bottom() - len,
+            Edge::Bottom => rect.y + len,
             _ => rect.y + (self.value * rect.height as f32).round() as i32,
         }
     }

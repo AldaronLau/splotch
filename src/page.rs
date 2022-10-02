@@ -1,6 +1,7 @@
 // page.rs
 //
 // Copyright (c) 2021  Douglas P Lau
+// Copyright (c) 2022  Jeron A Lau
 //
 use crate::chart::Chart;
 use std::fmt;
@@ -17,7 +18,7 @@ pub enum AspectRatio {
 }
 
 /// Edge of rendered item
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Edge {
     Top,
     Left,

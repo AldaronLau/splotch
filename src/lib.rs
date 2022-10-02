@@ -1,17 +1,9 @@
-//! # splot
-//!
-//! Plot data to HTML
-//!
-//! Project goals:
-//!
-//! - Simple but powerful API
-//! - Styling using CSS
-//! - Usable in WebAssembly
+//! Plot data in footile
 //!
 //! ## Example Line Plot
 //!
 //! ```rust
-//! use splot::{plot, Chart, Domain, Page};
+//! use splotch::{plot, Chart, Domain, Page};
 //!
 //! let data = vec![(13, 74), (111, 37), (125, 52), (190, 66)];
 //! let domain = Domain::from_data(&data).with_x(&[0.0, 200.0]);

@@ -1,6 +1,7 @@
 // scale.rs
 //
 // Copyright (c) 2021  Douglas P Lau
+// Copyright (c) 2022  Jeron A Lau
 //
 //! Scale items
 //!

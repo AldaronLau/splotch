@@ -8,3 +8,7 @@ keywords = ["chart", "graph", "plot", "visualization"]
 categories = ["science", "visualization"]
 repository = "https://github.com/AldaronLau/splotch"
 readme = "README.md"
+
+[dependencies]
+footile = "0.7"
+pointy = "0.3"
