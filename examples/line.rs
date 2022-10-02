@@ -1,8 +1,15 @@
 use splotch::{plot, Chart, Domain, Page};
 
 fn main() {
-    let data_a = vec![(13, 74), (111, 37), (125, 52), (190, 66)];
-    let data_b = vec![(22, 50), (105, 44), (120, 67), (180, 39), (210, 43)];
+    let data_a =
+        vec![(13.0, 74.0), (111.0, 37.0), (125.0, 52.0), (190.0, 66.0)];
+    let data_b = vec![
+        (22.0, 50.0),
+        (105.0, 44.0),
+        (120.0, 67.0),
+        (180.0, 39.0),
+        (210.0, 43.0),
+    ];
     let domain = Domain::from_data(&data_a).with_data(&data_b);
     let plot_a = plot::Line::new("Series A", &domain, &data_a);
     let plot_b = plot::Line::new("Series B", &domain, &data_b);

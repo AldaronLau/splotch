@@ -3,10 +3,11 @@
 // Copyright (c) 2021  Douglas P Lau
 // Copyright (c) 2022  Jeron A Lau
 //
+use pointy::Pt;
+
 use crate::{
     axis::{Horizontal, Vertical},
     page::Rect,
-    point::Point,
     scale::Scale,
 };
 
@@ -32,39 +33,28 @@ where
     Y: Scale + Default,
 {
     /// Create a domain from a set of points
-    pub fn from_data<P>(data: &[P]) -> Self
-    where
-        P: Point,
-    {
+    pub fn from_data<P: Into<Pt<f32>> + Clone>(data: &[P]) -> Self {
         let x_scale = X::from_data(data, |pt| pt.x());
         let y_scale = Y::from_data(data, |pt| pt.y());
+
         Domain { x_scale, y_scale }
     }
 
     /// Adjust domain to include a set of points
-    pub fn with_data<P>(mut self, data: &[P]) -> Self
-    where
-        P: Point,
-    {
+    pub fn with_data<P: Into<Pt<f32>> + Clone>(mut self, data: &[P]) -> Self {
         self.x_scale = self.x_scale.union(X::from_data(data, |pt| pt.x()));
         self.y_scale = self.y_scale.union(Y::from_data(data, |pt| pt.y()));
         self
     }
 
     /// Set `X` domain to a set of points
-    pub fn with_x<P>(mut self, data: &[P]) -> Self
-    where
-        P: Point,
-    {
+    pub fn with_x<P: Into<Pt<f32>> + Clone>(mut self, data: &[P]) -> Self {
         self.x_scale = X::from_data(data, |pt| pt.x());
         self
     }
 
     /// Set `Y` domain to a set of points
-    pub fn with_y<P>(mut self, data: &[P]) -> Self
-    where
-        P: Point,
-    {
+    pub fn with_y<P: Into<Pt<f32>> + Clone>(mut self, data: &[P]) -> Self {
         self.y_scale = Y::from_data(data, |pt| pt.y());
         self
     }

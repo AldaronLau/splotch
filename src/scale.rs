@@ -4,17 +4,21 @@
 // Copyright (c) 2022  Jeron A Lau
 //
 //! Scale items
+use pointy::Pt;
+
 use crate::{scale::sealed::Scale as _, text::Tick};
 
 /// Private module for sealed Scale trait
 pub(crate) mod sealed {
+    use pointy::Pt;
+
     use crate::text::Tick;
 
     pub trait Scale {
-        fn from_data<'a, I, P>(data: I, get: fn(&P) -> f32) -> Self
+        fn from_data<'a, I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
         where
             I: IntoIterator<Item = &'a P>,
-            P: 'a;
+            P: Into<Pt<f32>> + Clone + 'a;
         fn union(&self, rhs: Self) -> Self;
         fn inverted(&self) -> Self;
         fn normalize(&self, value: f32) -> f32;
@@ -87,17 +91,17 @@ impl Numeric {
 impl Scale for Numeric {}
 
 impl sealed::Scale for Numeric {
-    fn from_data<'a, I, P>(data: I, get: fn(&P) -> f32) -> Self
+    fn from_data<'a, I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
     where
         I: IntoIterator<Item = &'a P>,
-        P: 'a,
+        P: Into<Pt<f32>> + Clone + 'a,
     {
-        let mut it = data.into_iter();
+        let mut it = data.into_iter().cloned();
         if let Some(pt) = it.next() {
-            let mut min = get(pt);
+            let mut min = get(pt.into());
             let mut max = min;
             for pt in it {
-                let x = get(pt);
+                let x = get(pt.into());
                 if x < min {
                     min = x;
                 }

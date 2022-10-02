@@ -5,7 +5,7 @@
 //! ```rust
 //! use splotch::{plot, Chart, Domain, Page};
 //!
-//! let data = vec![(13, 74), (111, 37), (125, 52), (190, 66)];
+//! let data = vec![(13.0, 74.0), (111.0, 37.0), (125.0, 52.0), (190.0, 66.0)];
 //! let domain = Domain::from_data(&data).with_x(&[0.0, 200.0]);
 //! let plot = plot::Line::new("Series", &domain, &data);
 //! let page = Page::default().with_chart(
@@ -24,11 +24,9 @@ mod chart;
 mod domain;
 mod page;
 pub mod plot;
-mod point;
 pub mod scale;
 mod text;
 
 pub use chart::{Chart, Title};
 pub use domain::Domain;
 pub use page::{AspectRatio, Page};
-pub use point::Point;
