@@ -4,9 +4,7 @@
 // Copyright (c) 2022  Jeron A Lau
 //
 //! Scale items
-//!
-use crate::scale::sealed::Scale as _;
-use crate::text::Tick;
+use crate::{scale::sealed::Scale as _, text::Tick};
 
 /// Private module for sealed Scale trait
 pub(crate) mod sealed {

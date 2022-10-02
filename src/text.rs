@@ -7,8 +7,9 @@
 // FIXME
 #![allow(dead_code)]
 
-use crate::page::{Edge, Rect};
 use std::fmt;
+
+use crate::page::{Edge, Rect};
 
 /// Text label point
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -267,8 +268,8 @@ impl<'a> Tspan<'a> {
 }
 
 impl Tick {
-    pub const LEN: i32 = 20;
     pub const HLEN: i32 = Tick::LEN + 8;
+    pub const LEN: i32 = 20;
     pub const VLEN: i32 = Tick::LEN * 2;
 
     pub fn new<T>(value: f32, text: T) -> Self
@@ -278,9 +279,11 @@ impl Tick {
         let text = text.into();
         Tick { value, text }
     }
+
     pub fn text(&self) -> &str {
         &self.text
     }
+
     pub fn x(&self, edge: Edge, rect: Rect, len: i32) -> i32 {
         match edge {
             Edge::Left => rect.right() - len,
@@ -288,6 +291,7 @@ impl Tick {
             _ => rect.x + (self.value * rect.width as f32).round() as i32,
         }
     }
+
     pub fn y(&self, edge: Edge, rect: Rect, len: i32) -> i32 {
         match edge {
             Edge::Top => rect.bottom() - len,
@@ -295,6 +299,7 @@ impl Tick {
             _ => rect.y + (self.value * rect.height as f32).round() as i32,
         }
     }
+
     pub fn tspan(&self, edge: Edge, rect: Rect) -> Tspan {
         let x = self.x(edge, rect, Tick::HLEN);
         let y = self.y(edge, rect, Tick::VLEN);

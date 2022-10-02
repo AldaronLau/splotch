@@ -3,11 +3,14 @@
 // Copyright (c) 2021  Douglas P Lau
 // Copyright (c) 2022  Jeron A Lau
 //
-use crate::axis::Axis;
-use crate::page::{AspectRatio, Edge, Rect};
-use crate::plot::Plot;
-use crate::text::{Anchor, Text};
 use std::fmt;
+
+use crate::{
+    axis::Axis,
+    page::{AspectRatio, Edge, Rect},
+    plot::Plot,
+    text::{Anchor, Text},
+};
 
 /// Marker shapes
 const MARKERS: &[&str] = &[

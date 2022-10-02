@@ -4,15 +4,18 @@
 // Copyright (c) 2022  Jeron A Lau
 //
 //! Axis for charts
-//!
-use crate::page::{Edge, Rect};
-use crate::text::{Anchor, Label, Text, Tick};
 use std::fmt;
+
+use crate::{
+    page::{Edge, Rect},
+    text::{Anchor, Label, Text, Tick},
+};
 
 /// Private module for sealed Axis trait
 mod sealed {
-    use crate::page::Rect;
     use std::fmt;
+
+    use crate::page::Rect;
 
     pub trait Axis {
         fn split(&self, area: &mut Rect) -> Rect;

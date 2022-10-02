@@ -4,17 +4,15 @@
 // Copyright (c) 2022  Jeron A Lau
 //
 //! Plot types
-//!
-use crate::domain::Domain;
-use crate::page::Rect;
-use crate::point::Point;
-use crate::scale::Numeric;
 use std::fmt;
+
+use crate::{domain::Domain, page::Rect, point::Point, scale::Numeric};
 
 /// Private module for sealed Plot trait
 mod sealed {
-    use crate::page::Rect;
     use std::fmt;
+
+    use crate::page::Rect;
 
     pub trait Plot {
         fn name(&self) -> &str;
@@ -77,6 +75,7 @@ where
     fn name(&self) -> &str {
         self.name
     }
+
     fn display(
         &self,
         f: &mut fmt::Formatter,
@@ -126,6 +125,7 @@ where
     fn name(&self) -> &str {
         self.name
     }
+
     fn display(
         &self,
         f: &mut fmt::Formatter,
@@ -169,6 +169,7 @@ where
     fn name(&self) -> &str {
         self.name
     }
+
     fn display(
         &self,
         f: &mut fmt::Formatter,

@@ -3,10 +3,12 @@
 // Copyright (c) 2021  Douglas P Lau
 // Copyright (c) 2022  Jeron A Lau
 //
-use crate::axis::{Horizontal, Vertical};
-use crate::page::Rect;
-use crate::point::Point;
-use crate::scale::Scale;
+use crate::{
+    axis::{Horizontal, Vertical},
+    page::Rect,
+    point::Point,
+    scale::Scale,
+};
 
 /// Data domain in two dimensions
 ///
@@ -107,8 +109,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scale::sealed::Scale;
-    use crate::scale::Numeric;
+    use crate::scale::{sealed::Scale, Numeric};
 
     #[test]
     fn test() {
