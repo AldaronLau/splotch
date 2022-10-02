@@ -15,10 +15,10 @@ pub(crate) mod sealed {
     use crate::text::Tick;
 
     pub trait Scale {
-        fn from_data<'a, I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
+        fn from_data<I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
         where
-            I: IntoIterator<Item = &'a P>,
-            P: Into<Pt<f32>> + Clone + 'a;
+            I: IntoIterator<Item = P>,
+            P: Into<Pt<f32>> + Clone;
         fn union(&self, rhs: Self) -> Self;
         fn inverted(&self) -> Self;
         fn normalize(&self, value: f32) -> f32;
@@ -91,12 +91,12 @@ impl Numeric {
 impl Scale for Numeric {}
 
 impl sealed::Scale for Numeric {
-    fn from_data<'a, I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
+    fn from_data<I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
     where
-        I: IntoIterator<Item = &'a P>,
-        P: Into<Pt<f32>> + Clone + 'a,
+        I: IntoIterator<Item = P>,
+        P: Into<Pt<f32>> + Clone,
     {
-        let mut it = data.into_iter().cloned();
+        let mut it = data.into_iter();
         if let Some(pt) = it.next() {
             let mut min = get(pt.into());
             let mut max = min;

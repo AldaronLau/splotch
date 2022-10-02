@@ -1,4 +1,8 @@
-use splotch::{plot, Chart, Domain, Page};
+use pointy::BBox;
+use splotch::{
+    axis::{Horizontal, Vertical},
+    plot, Chart, Page,
+};
 
 fn main() {
     let data_a =
@@ -10,15 +14,19 @@ fn main() {
         (180.0, 39.0),
         (210.0, 43.0),
     ];
-    let domain = Domain::from_data(&data_a).with_data(&data_b);
+    let domain = {
+        let mut domain = BBox::new(data_a.iter().cloned());
+        domain.extend(data_b.iter().cloned());
+        domain
+    };
     let plot_a = plot::Line::new("Series A", &domain, &data_a);
     let plot_b = plot::Line::new("Series B", &domain, &data_b);
     let page = Page::default().with_chart(
         Chart::default()
             .with_title("Line Plot")
-            .with_axis(domain.x_axis().with_name("X Axis Name"))
-            .with_axis(domain.y_axis().with_name("Y Axis Name"))
-            .with_axis(domain.y_axis().on_right())
+            .with_axis(Horizontal::new(domain).with_name("X Axis Name"))
+            .with_axis(Vertical::new(domain).with_name("Y Axis Name"))
+            .with_axis(Vertical::new(domain).on_right())
             .with_plot(&plot_a)
             .with_plot(&plot_b),
     );

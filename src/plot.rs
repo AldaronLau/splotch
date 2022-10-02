@@ -6,9 +6,12 @@
 //! Plot types
 use std::fmt;
 
-use pointy::Pt;
+use pointy::{BBox, Pt};
 
-use crate::{domain::Domain, page::Rect, scale::Numeric};
+use crate::{
+    page::Rect,
+    scale::{sealed::Scale as _, Numeric},
+};
 
 /// Private module for sealed Plot trait
 mod sealed {
@@ -37,7 +40,7 @@ pub trait Plot: sealed::Plot {}
 /// Data is drawn as filled-in areas, stacked vertically.
 pub struct Area<'a, P: Into<Pt<f32>> + Clone + 'a> {
     name: &'a str,
-    domain: &'a Domain<Numeric, Numeric>,
+    domain: &'a BBox<f32>,
     data: &'a [P],
 }
 
@@ -46,7 +49,7 @@ pub struct Area<'a, P: Into<Pt<f32>> + Clone + 'a> {
 /// Data is drawn as a series of points connected by line segments.
 pub struct Line<'a, P: Into<Pt<f32>> + Clone + 'a> {
     name: &'a str,
-    domain: &'a Domain<Numeric, Numeric>,
+    domain: &'a BBox<f32>,
     data: &'a [P],
 }
 
@@ -55,7 +58,7 @@ pub struct Line<'a, P: Into<Pt<f32>> + Clone + 'a> {
 /// Data is drawn as unconnected points.
 pub struct Scatter<'a, P: Into<Pt<f32>> + Clone + 'a> {
     name: &'a str,
-    domain: &'a Domain<Numeric, Numeric>,
+    domain: &'a BBox<f32>,
     data: &'a [P],
 }
 
@@ -74,19 +77,19 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Area<'a, P> {
     ) -> fmt::Result {
         write!(f, "<path class='plot-{} plot-area' d='", num)?;
         if let Some(pt) = self.data.first().cloned() {
-            let x = self.domain.x_map(pt.into().x(), rect);
-            let y = self.domain.y_map(0.0, rect);
+            let x = x_map(self.domain, pt.into().x(), rect);
+            let y = y_map(self.domain, 0.0, rect);
             write!(f, "M{} {}", x, y)?;
         }
         for pt in self.data.iter().cloned() {
             let pt = pt.into();
-            let x = self.domain.x_map(pt.x(), rect);
-            let y = self.domain.y_map(pt.y(), rect);
+            let x = x_map(self.domain, pt.x(), rect);
+            let y = y_map(self.domain, pt.y(), rect);
             write!(f, " {} {}", x, y)?;
         }
         if let Some(pt) = self.data.last().cloned() {
-            let x = self.domain.x_map(pt.into().x(), rect);
-            let y = self.domain.y_map(0.0, rect);
+            let x = x_map(self.domain, pt.into().x(), rect);
+            let y = y_map(self.domain, 0.0, rect);
             write!(f, " {} {}", x, y)?;
         }
         writeln!(f, "' />")
@@ -95,11 +98,7 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Area<'a, P> {
 
 impl<'a, P: Into<Pt<f32>> + Clone> Area<'a, P> {
     /// Create a new stacked area plot
-    pub fn new(
-        name: &'a str,
-        domain: &'a Domain<Numeric, Numeric>,
-        data: &'a [P],
-    ) -> Self {
+    pub fn new(name: &'a str, domain: &'a BBox<f32>, data: &'a [P]) -> Self {
         Area { name, domain, data }
     }
 }
@@ -120,8 +119,8 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Line<'a, P> {
         write!(f, "<path class='plot-{} plot-line' d='", num)?;
         for (i, pt) in self.data.iter().cloned().enumerate() {
             let pt = pt.into();
-            let x = self.domain.x_map(pt.x(), rect);
-            let y = self.domain.y_map(pt.y(), rect);
+            let x = x_map(self.domain, pt.x(), rect);
+            let y = y_map(self.domain, pt.y(), rect);
             if i == 0 {
                 write!(f, "M{} {}", x, y)?;
             } else {
@@ -134,11 +133,7 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Line<'a, P> {
 
 impl<'a, P: Into<Pt<f32>> + Clone> Line<'a, P> {
     /// Create a new line plot
-    pub fn new(
-        name: &'a str,
-        domain: &'a Domain<Numeric, Numeric>,
-        data: &'a [P],
-    ) -> Self {
+    pub fn new(name: &'a str, domain: &'a BBox<f32>, data: &'a [P]) -> Self {
         Line { name, domain, data }
     }
 }
@@ -159,8 +154,8 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Scatter<'a, P> {
         write!(f, "<path class='plot-{} plot-scatter' d='", num)?;
         for (i, pt) in self.data.iter().cloned().enumerate() {
             let pt = pt.into();
-            let x = self.domain.x_map(pt.x(), rect);
-            let y = self.domain.y_map(pt.y(), rect);
+            let x = x_map(self.domain, pt.x(), rect);
+            let y = y_map(self.domain, pt.y(), rect);
             if i == 0 {
                 write!(f, "M{} {}", x, y)?;
             } else {
@@ -173,11 +168,35 @@ impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Scatter<'a, P> {
 
 impl<'a, P: Into<Pt<f32>> + Clone> Scatter<'a, P> {
     /// Create a new scatter plot
-    pub fn new(
-        name: &'a str,
-        domain: &'a Domain<Numeric, Numeric>,
-        data: &'a [P],
-    ) -> Self {
+    pub fn new(name: &'a str, domain: &'a BBox<f32>, data: &'a [P]) -> Self {
         Scatter { name, domain, data }
     }
+}
+
+/// Normalize an `X` value
+fn x_norm(domain: BBox<f32>, x: f32) -> f32 {
+    let x_scale = Numeric::from_data(domain, |pt| pt.x());
+    x_scale.normalize(x)
+}
+
+/// Normalize a `Y` value
+fn y_norm(domain: BBox<f32>, y: f32) -> f32 {
+    let y_scale = Numeric::from_data(domain, |pt| pt.y());
+    y_scale.inverted().normalize(y)
+}
+
+/// Map an `X` value to a rectangle
+pub(crate) fn x_map(domain: &BBox<f32>, x: f32, rect: Rect) -> i32 {
+    let rx = rect.x as f32;
+    let rw = f32::from(rect.width);
+    let mx = rx + rw * x_norm(*domain, x);
+    mx.round() as i32
+}
+
+/// Map a `Y` value to a rectangle
+pub(crate) fn y_map(domain: &BBox<f32>, y: f32, rect: Rect) -> i32 {
+    let ry = rect.y as f32;
+    let rh = f32::from(rect.height);
+    let my = ry + rh * y_norm(*domain, y);
+    my.round() as i32
 }

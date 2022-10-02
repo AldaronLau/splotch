@@ -4,10 +4,17 @@
 // Copyright (c) 2022  Jeron A Lau
 //
 //! Axis for charts
+
+// FIXME
+#![allow(dead_code)]
+
 use std::fmt;
+
+use pointy::BBox;
 
 use crate::{
     page::{Edge, Rect},
+    scale::{sealed::Scale, Numeric},
     text::{Anchor, Label, Text, Tick},
 };
 
@@ -96,10 +103,12 @@ impl Axis for Horizontal {}
 
 impl Horizontal {
     /// Create a new horizontal axis
-    pub(crate) fn new(ticks: Vec<Tick>) -> Self {
+    pub fn new(domain: BBox<f32>) -> Self {
+        let x_scale = Numeric::from_data(domain, |pt| pt.x());
+
         Self {
             edge: Edge::Bottom,
-            ticks,
+            ticks: x_scale.ticks(),
             name: None,
             label: Label::new(),
         }
@@ -203,10 +212,12 @@ impl Axis for Vertical {}
 
 impl Vertical {
     /// Create a new vertical axis
-    pub(crate) fn new(ticks: Vec<Tick>) -> Self {
+    pub fn new(domain: BBox<f32>) -> Self {
+        let y_scale = Numeric::from_data(domain, |pt| pt.y());
+
         Self {
             edge: Edge::Left,
-            ticks,
+            ticks: y_scale.inverted().ticks(),
             name: None,
             label: Label::new(),
         }
