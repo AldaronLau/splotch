@@ -32,4 +32,4 @@ pub mod scale;
 mod text;
 
 pub use chart::{Chart, Title};
-pub use page::{AspectRatio};
+pub use page::AspectRatio;

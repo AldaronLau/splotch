@@ -14,7 +14,7 @@ use pointy::BBox;
 
 use crate::{
     page::Edge,
-    scale::{sealed::Scale, Numeric},
+    scale::Numeric,
     text::{Anchor, Label, Text, Tick},
 };
 

@@ -8,7 +8,7 @@ use std::fmt;
 
 use pointy::{BBox, Pt};
 
-use crate::scale::{sealed::Scale as _, Numeric};
+use crate::scale::Numeric;
 
 /// Private module for sealed Plot trait
 mod sealed {

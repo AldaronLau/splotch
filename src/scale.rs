@@ -6,30 +6,7 @@
 //! Scale items
 use pointy::Pt;
 
-use crate::{scale::sealed::Scale as _, text::Tick};
-
-/// Private module for sealed Scale trait
-pub(crate) mod sealed {
-    use pointy::Pt;
-
-    use crate::text::Tick;
-
-    pub trait Scale {
-        fn from_data<I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
-        where
-            I: IntoIterator<Item = P>,
-            P: Into<Pt<f32>> + Clone;
-        fn union(&self, rhs: Self) -> Self;
-        fn inverted(&self) -> Self;
-        fn normalize(&self, value: f32) -> f32;
-        fn ticks(&self) -> Vec<Tick>;
-    }
-}
-
-/// Scale for a domain dimension
-///
-/// This trait is *sealed* to hide details.
-pub trait Scale: sealed::Scale {}
+use crate::text::Tick;
 
 /// Numeric scale
 #[derive(Clone, Debug)]
@@ -86,12 +63,8 @@ impl Numeric {
         let tick = Tick::new(value, text);
         ticks.push(tick);
     }
-}
 
-impl Scale for Numeric {}
-
-impl sealed::Scale for Numeric {
-    fn from_data<I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
+    pub(crate) fn from_data<I, P>(data: I, get: fn(Pt<f32>) -> f32) -> Self
     where
         I: IntoIterator<Item = P>,
         P: Into<Pt<f32>> + Clone,
@@ -115,13 +88,7 @@ impl sealed::Scale for Numeric {
         }
     }
 
-    fn union(&self, rhs: Self) -> Self {
-        let min = self.start.min(rhs.start);
-        let max = self.stop.max(rhs.stop);
-        Numeric::new(min, max)
-    }
-
-    fn inverted(&self) -> Self {
+    pub(crate) fn inverted(&self) -> Self {
         Numeric {
             start: self.start,
             stop: self.stop,
@@ -129,7 +96,7 @@ impl sealed::Scale for Numeric {
         }
     }
 
-    fn normalize(&self, value: f32) -> f32 {
+    pub(crate) fn normalize(&self, value: f32) -> f32 {
         let a = self.start;
         let b = self.stop;
         if b - a > f32::EPSILON {
@@ -143,7 +110,7 @@ impl sealed::Scale for Numeric {
         }
     }
 
-    fn ticks(&self) -> Vec<Tick> {
+    pub(crate) fn ticks(&self) -> Vec<Tick> {
         let mut ticks = vec![];
         let spacing = self.tick_spacing();
         if spacing > 0.0 {
@@ -177,7 +144,6 @@ mod tests {
         assert_eq!(Numeric::new(0.0, 50.0).tick_spacing(), 10.0);
         assert_eq!(Numeric::new(0.0, 75.0).tick_spacing(), 10.0);
         assert_eq!(Numeric::new(0.0, 100.0).tick_spacing(), 10.0);
-        //assert_eq!(Numeric::new(-50.0, 50.0).tick_spacing(), 10.0);
         assert_eq!(Numeric::new(0.0, 1.0).tick_spacing(), 0.1);
         assert_eq!(Numeric::new(0.0, 1.5).tick_spacing(), 0.25);
         assert_eq!(Numeric::new(0.0, 2.0).tick_spacing(), 0.25);

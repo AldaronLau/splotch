@@ -1,7 +1,7 @@
 use pointy::BBox;
 use splotch::{
     axis::{Horizontal, Vertical},
-    plot, Chart
+    plot, Chart,
 };
 
 fn main() {
