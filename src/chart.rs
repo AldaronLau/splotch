@@ -146,13 +146,6 @@ impl<'a> Chart<'a> {
         self
     }
 
-    /// Display the chart embedded in HTML
-    pub(crate) fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.svg(f, false)?;
-        self.defs(f)?;
-        self.body(f)
-    }
-
     fn svg(&self, f: &mut fmt::Formatter, stand_alone: bool) -> fmt::Result {
         let rect = self.aspect_ratio.rect();
         write!(f, "<svg")?;
@@ -168,14 +161,6 @@ impl<'a> Chart<'a> {
             rect.x_span(),
             rect.y_span()
         )
-    }
-
-    fn link(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<link")?;
-        write!(f, " xmlns='http://www.w3.org/1999/xhtml'")?;
-        write!(f, " type='text/css'")?;
-        write!(f, " rel='stylesheet'")?;
-        writeln!(f, " href='./css/splotch.css' />")
     }
 
     fn defs(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -247,12 +232,28 @@ impl<'a> Chart<'a> {
     }
 }
 
-impl<'a> fmt::Display for Chart<'a> {
+impl fmt::Display for Chart<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "<html>")?;
+        writeln!(f, "<head>")?;
+        writeln!(f, "<meta charset='UTF-8'>")?;
+        writeln!(f, "<link href='./css/splotch.css' rel='stylesheet'/>")?;
+        writeln!(f, "</head>")?;
+        writeln!(f, "<body>")?;
+        writeln!(f, "<div class='page'>")?;
+
+        // Display chart
+        writeln!(f, "<div class='chart'>")?;
         self.svg(f, true)?;
-        self.link(f)?;
         self.defs(f)?;
-        self.body(f)
+        self.body(f)?;
+        self.legend(f)?;
+        writeln!(f, "</div>")?;
+
+        writeln!(f, "</div>")?;
+        writeln!(f, "</body>")?;
+
+        Ok(())
     }
 }
 

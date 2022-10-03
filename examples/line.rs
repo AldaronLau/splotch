@@ -1,7 +1,7 @@
 use pointy::BBox;
 use splotch::{
     axis::{Horizontal, Vertical},
-    plot, Chart, Page,
+    plot, Chart
 };
 
 fn main() {
@@ -21,14 +21,12 @@ fn main() {
     };
     let plot_a = plot::Line::new("Series A", &domain, &data_a);
     let plot_b = plot::Line::new("Series B", &domain, &data_b);
-    let page = Page::default().with_chart(
-        Chart::default()
-            .with_title("Line Plot")
-            .with_axis(Horizontal::new(domain).with_name("X Axis Name"))
-            .with_axis(Vertical::new(domain).with_name("Y Axis Name"))
-            .with_axis(Vertical::new(domain).on_right())
-            .with_plot(&plot_a)
-            .with_plot(&plot_b),
-    );
-    print!("{}", page);
+    let chart = Chart::default()
+        .with_title("Line Plot")
+        .with_axis(Horizontal::new(domain).with_name("X Axis Name"))
+        .with_axis(Vertical::new(domain).with_name("Y Axis Name"))
+        .with_axis(Vertical::new(domain).on_right())
+        .with_plot(&plot_a)
+        .with_plot(&plot_b);
+    print!("{chart}");
 }
