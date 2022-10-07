@@ -3,14 +3,14 @@
 // Copyright (c) 2021  Douglas P Lau
 // Copyright (c) 2022  Jeron A Lau
 //
-use std::fmt;
+use std::{fmt, fmt::Write};
 
 use pointy::{BBox, Pt};
 
 use crate::{
     axis::Axis,
     page::{AspectRatio, Edge},
-    plot::Plot,
+    plot::{Plot, PlotKind},
     text::{Anchor, Text},
 };
 
@@ -41,13 +41,10 @@ pub struct Chart<'a> {
     aspect_ratio: AspectRatio,
     titles: Vec<Title>,
     axes: Vec<Box<dyn Axis + 'a>>,
-    plots: Vec<&'a (dyn Plot + 'a)>,
+    plots: Vec<(PlotKind, Plot<'a>)>,
 }
 
-impl<T> From<T> for Title
-where
-    T: Into<String>,
-{
+impl<T: Into<String>> From<T> for Title {
     fn from(text: T) -> Self {
         Title::new(text.into())
     }
@@ -55,11 +52,8 @@ where
 
 impl Title {
     /// Create a new title
-    pub fn new<T>(text: T) -> Self
-    where
-        T: Into<String>,
-    {
-        Title {
+    pub fn new(text: impl Into<String>) -> Self {
+        Self {
             text: text.into(),
             anchor: Anchor::Middle,
             edge: Edge::Top,
@@ -96,7 +90,7 @@ impl Title {
         self
     }
 
-    fn display(&self, f: &mut fmt::Formatter, rect: BBox<f32>) -> fmt::Result {
+    fn display(&self, f: &mut dyn Write, rect: BBox<f32>) -> fmt::Result {
         let text = Text::new(self.edge)
             .with_rect(rect)
             .with_anchor(self.anchor)
@@ -140,13 +134,25 @@ impl<'a> Chart<'a> {
         self
     }
 
-    /// Add a `Plot`
-    pub fn with_plot(mut self, plot: &'a dyn Plot) -> Self {
-        self.plots.push(plot);
+    /// Add an area `Plot`
+    pub fn with_area_plot(mut self, plot: Plot<'a>) -> Self {
+        self.plots.push((PlotKind::Area, plot));
         self
     }
 
-    fn svg(&self, f: &mut fmt::Formatter, stand_alone: bool) -> fmt::Result {
+    /// Add a line `Plot`
+    pub fn with_line_plot(mut self, plot: Plot<'a>) -> Self {
+        self.plots.push((PlotKind::Line, plot));
+        self
+    }
+
+    /// Add a scatter `Plot`
+    pub fn with_scatter_plot(mut self, plot: Plot<'a>) -> Self {
+        self.plots.push((PlotKind::Scatter, plot));
+        self
+    }
+
+    fn svg(&self, f: &mut dyn Write, stand_alone: bool) -> fmt::Result {
         let rect = self.aspect_ratio.rect();
         write!(f, "<svg")?;
         if stand_alone {
@@ -163,7 +169,7 @@ impl<'a> Chart<'a> {
         )
     }
 
-    fn defs(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn defs(&self, f: &mut dyn Write) -> fmt::Result {
         writeln!(f, "<defs>")?;
         for i in 0..self.plots.len() {
             write!(f, "<marker id='marker-{}'", i)?;
@@ -181,7 +187,7 @@ impl<'a> Chart<'a> {
         writeln!(f, "</defs>")
     }
 
-    fn body(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn body(&mut self, f: &mut dyn Write) -> fmt::Result {
         let mut area = inset(self.aspect_ratio.rect(), 40);
         for title in &self.titles {
             let rect = title.edge.split(&mut area, 100.0);
@@ -198,8 +204,8 @@ impl<'a> Chart<'a> {
             axis.display(f, rect, area)?;
         }
         writeln!(f, "<g clip-path='url(#clip-chart)'>")?;
-        for (plot, num) in self.plots.iter().zip((0..10).cycle()) {
-            plot.display(f, num, area)?;
+        for ((kind, plot), num) in self.plots.iter_mut().zip((0..10).cycle()) {
+            (*plot).display(f, num, area, *kind)?;
         }
         writeln!(f, "</g>")?;
         writeln!(f, "</svg>")
@@ -217,7 +223,7 @@ impl<'a> Chart<'a> {
     }
 
     /// Render the legend as an HTML fragment
-    pub(crate) fn legend(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    pub(crate) fn legend(&self, f: &mut dyn Write) -> fmt::Result {
         writeln!(f, "<div class='legend'>")?;
         for (i, plot) in self.plots.iter().enumerate() {
             writeln!(f, "<div>")?;
@@ -225,35 +231,36 @@ impl<'a> Chart<'a> {
             write!(f, "<path class='plot-{} legend-line'", i)?;
             writeln!(f, " d='M0 15h30h30'/>")?;
             writeln!(f, "</svg>")?;
-            writeln!(f, "{}", plot.name())?;
+            writeln!(f, "{}", plot.1.name())?;
             writeln!(f, "</div>")?;
         }
         writeln!(f, "</div>")
     }
-}
 
-impl fmt::Display for Chart<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "<html>")?;
-        writeln!(f, "<head>")?;
-        writeln!(f, "<meta charset='UTF-8'>")?;
-        writeln!(f, "<link href='./css/splotch.css' rel='stylesheet'/>")?;
-        writeln!(f, "</head>")?;
-        writeln!(f, "<body>")?;
-        writeln!(f, "<div class='page'>")?;
+    /// Render chart as HTML
+    pub fn render(mut self) -> String {
+        let mut html = String::new();
+
+        html.push_str("<html>");
+        html.push_str("<head>");
+        html.push_str("<meta charset='UTF-8'>");
+        html.push_str("<link href='./css/splotch.css' rel='stylesheet'/>");
+        html.push_str("</head>");
+        html.push_str("<body>");
+        html.push_str("<div class='page'>");
 
         // Display chart
-        writeln!(f, "<div class='chart'>")?;
-        self.svg(f, true)?;
-        self.defs(f)?;
-        self.body(f)?;
-        self.legend(f)?;
-        writeln!(f, "</div>")?;
+        html.push_str("<div class='chart'>");
+        self.svg(&mut html, true).unwrap();
+        self.defs(&mut html).unwrap();
+        self.body(&mut html).unwrap();
+        self.legend(&mut html).unwrap();
+        html.push_str("</div>");
 
-        writeln!(f, "</div>")?;
-        writeln!(f, "</body>")?;
+        html.push_str("</div>");
+        html.push_str("</body>");
 
-        Ok(())
+        html
     }
 }
 

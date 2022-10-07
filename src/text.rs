@@ -7,7 +7,7 @@
 // FIXME
 #![allow(dead_code)]
 
-use std::fmt;
+use std::{fmt, fmt::Write};
 
 use pointy::BBox;
 
@@ -76,8 +76,8 @@ pub struct Tick {
     text: String,
 }
 
-impl fmt::Display for Anchor {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Anchor {
+    pub(crate) fn display(&self, f: &mut dyn Write) -> fmt::Result {
         match self {
             Anchor::Start => write!(f, " text-anchor='start'"),
             Anchor::Middle => write!(f, " text-anchor='middle'"),
@@ -183,7 +183,7 @@ impl<'a> Text<'a> {
         self
     }
 
-    pub fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn display(&self, f: &mut dyn Write) -> fmt::Result {
         write!(f, "<text")?;
         if let Some(class_name) = self.class_name {
             write!(f, " class='{}'", class_name)?;
@@ -194,18 +194,15 @@ impl<'a> Text<'a> {
         if let Some(dy) = self.dy {
             write!(f, " dy='{}em'", dy)?;
         }
-        writeln!(f, "{}>", self.anchor)
+        self.anchor.display(f)?;
+        writeln!(f, ">")
     }
 
-    pub fn display_done(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn display_done(&self, f: &mut dyn Write) -> fmt::Result {
         writeln!(f, "</text>")
     }
 
-    fn transform(
-        &self,
-        f: &mut fmt::Formatter,
-        rect: BBox<f32>,
-    ) -> fmt::Result {
+    fn transform(&self, f: &mut dyn Write, rect: BBox<f32>) -> fmt::Result {
         let x = match (self.edge, self.anchor) {
             (Edge::Top, Anchor::Start) | (Edge::Bottom, Anchor::Start) => {
                 rect.x_min() as i32
@@ -259,7 +256,7 @@ impl<'a> Tspan<'a> {
         self
     }
 
-    pub fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn display(&self, f: &mut dyn Write) -> fmt::Result {
         write!(f, "<tspan")?;
         if let Some(x) = self.x {
             write!(f, " x='{}'", x)?;

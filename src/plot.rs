@@ -4,169 +4,129 @@
 // Copyright (c) 2022  Jeron A Lau
 //
 //! Plot types
-use std::fmt;
+
+use std::{fmt, fmt::Write};
 
 use pointy::{BBox, Pt};
 
 use crate::scale::Numeric;
 
-/// Private module for sealed Plot trait
-mod sealed {
-    use std::fmt;
-
-    use pointy::BBox;
-
-    pub trait Plot {
-        fn name(&self) -> &str;
-        fn display(
-            &self,
-            f: &mut fmt::Formatter,
-            num: usize,
-            rect: BBox<f32>,
-        ) -> fmt::Result;
-    }
+#[derive(Copy, Clone, Debug)]
+pub(crate) enum PlotKind {
+    Area,
+    Line,
+    Scatter,
 }
 
-/// Plot for rendering data
+/// Generic plot
 ///
-/// This trait is *sealed* to hide details.
-pub trait Plot: sealed::Plot {}
-
-/// Stacked area plot
-///
-/// Data is drawn as filled-in areas, stacked vertically.
-pub struct Area<'a, P: Into<Pt<f32>> + Clone + 'a> {
+/// The type of plot that's rendered is determined at a later step.
+pub struct Plot<'a> {
     name: &'a str,
     domain: &'a BBox<f32>,
-    data: &'a [P],
+    data: &'a mut dyn Iterator<Item = Pt<f32>>,
 }
 
-/// Line plot
-///
-/// Data is drawn as a series of points connected by line segments.
-pub struct Line<'a, P: Into<Pt<f32>> + Clone + 'a> {
-    name: &'a str,
-    domain: &'a BBox<f32>,
-    data: &'a [P],
-}
-
-/// Scatter plot
-///
-/// Data is drawn as unconnected points.
-pub struct Scatter<'a, P: Into<Pt<f32>> + Clone + 'a> {
-    name: &'a str,
-    domain: &'a BBox<f32>,
-    data: &'a [P],
-}
-
-impl<'a, P> Plot for Area<'a, P> where P: Into<Pt<f32>> + Clone {}
-
-impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Area<'a, P> {
-    fn name(&self) -> &str {
-        self.name
+impl<'a> Plot<'a> {
+    pub fn new(
+        name: &'a str,
+        domain: &'a BBox<f32>,
+        data: &'a mut dyn Iterator<Item = Pt<f32>>,
+    ) -> Self {
+        Self { name, domain, data }
     }
 
-    fn display(
-        &self,
-        f: &mut fmt::Formatter,
+    fn display_area(
+        &mut self,
+        f: &mut dyn Write,
         num: usize,
         rect: BBox<f32>,
     ) -> fmt::Result {
-        write!(f, "<path class='plot-{} plot-area' d='", num)?;
-        if let Some(pt) = self.data.first().cloned() {
-            let x = x_map(self.domain, pt.into().x(), rect);
+        let mut iter = self.data.peekable();
+
+        write!(f, "<path class='plot-{num} plot-area' d='")?;
+
+        if let Some(pt) = iter.peek() {
+            let x = x_map(self.domain, pt.x(), rect);
             let y = y_map(self.domain, 0.0, rect);
-            write!(f, "M{} {}", x, y)?;
+            write!(f, "M{x} {y}")?;
         }
-        for pt in self.data.iter().cloned() {
-            let pt = pt.into();
+
+        while let Some(pt) = iter.next() {
             let x = x_map(self.domain, pt.x(), rect);
             let y = y_map(self.domain, pt.y(), rect);
-            write!(f, " {} {}", x, y)?;
+            write!(f, " {x} {y}")?;
+
+            if iter.peek().is_none() {
+                let x = x_map(self.domain, pt.x(), rect);
+                let y = y_map(self.domain, 0.0, rect);
+                write!(f, " {x} {y}")?;
+            }
         }
-        if let Some(pt) = self.data.last().cloned() {
-            let x = x_map(self.domain, pt.into().x(), rect);
-            let y = y_map(self.domain, 0.0, rect);
-            write!(f, " {} {}", x, y)?;
-        }
+
         writeln!(f, "' />")
     }
-}
 
-impl<'a, P: Into<Pt<f32>> + Clone> Area<'a, P> {
-    /// Create a new stacked area plot
-    pub fn new(name: &'a str, domain: &'a BBox<f32>, data: &'a [P]) -> Self {
-        Area { name, domain, data }
-    }
-}
-
-impl<'a, P> Plot for Line<'a, P> where P: Into<Pt<f32>> + Clone {}
-
-impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Line<'a, P> {
-    fn name(&self) -> &str {
-        self.name
-    }
-
-    fn display(
-        &self,
-        f: &mut fmt::Formatter,
+    fn display_line(
+        &mut self,
+        f: &mut dyn Write,
         num: usize,
         rect: BBox<f32>,
     ) -> fmt::Result {
-        write!(f, "<path class='plot-{} plot-line' d='", num)?;
-        for (i, pt) in self.data.iter().cloned().enumerate() {
-            let pt = pt.into();
+        write!(f, "<path class='plot-{num} plot-line' d='")?;
+
+        for (i, pt) in self.data.enumerate() {
             let x = x_map(self.domain, pt.x(), rect);
             let y = y_map(self.domain, pt.y(), rect);
+
             if i == 0 {
-                write!(f, "M{} {}", x, y)?;
+                write!(f, "M{x} {y}")?;
             } else {
-                write!(f, " {} {}", x, y)?;
+                write!(f, " {x} {y}")?;
             }
         }
         writeln!(f, "'/>")
     }
-}
 
-impl<'a, P: Into<Pt<f32>> + Clone> Line<'a, P> {
-    /// Create a new line plot
-    pub fn new(name: &'a str, domain: &'a BBox<f32>, data: &'a [P]) -> Self {
-        Line { name, domain, data }
-    }
-}
-
-impl<'a, P> Plot for Scatter<'a, P> where P: Into<Pt<f32>> + Clone {}
-
-impl<'a, P: Into<Pt<f32>> + Clone> sealed::Plot for Scatter<'a, P> {
-    fn name(&self) -> &str {
-        self.name
-    }
-
-    fn display(
-        &self,
-        f: &mut fmt::Formatter,
+    fn display_scatter(
+        &mut self,
+        f: &mut dyn Write,
         num: usize,
         rect: BBox<f32>,
     ) -> fmt::Result {
-        write!(f, "<path class='plot-{} plot-scatter' d='", num)?;
-        for (i, pt) in self.data.iter().cloned().enumerate() {
-            let pt = pt.into();
+        write!(f, "<path class='plot-{num} plot-scatter' d='")?;
+
+        for (i, pt) in self.data.enumerate() {
             let x = x_map(self.domain, pt.x(), rect);
             let y = y_map(self.domain, pt.y(), rect);
+
             if i == 0 {
-                write!(f, "M{} {}", x, y)?;
+                write!(f, "M{x} {y}")?;
             } else {
-                write!(f, " {} {}", x, y)?;
+                write!(f, " {x} {y}")?;
             }
         }
         writeln!(f, "' />")
     }
-}
 
-impl<'a, P: Into<Pt<f32>> + Clone> Scatter<'a, P> {
-    /// Create a new scatter plot
-    pub fn new(name: &'a str, domain: &'a BBox<f32>, data: &'a [P]) -> Self {
-        Scatter { name, domain, data }
+    pub(crate) fn name(&self) -> &'a str {
+        self.name
+    }
+
+    pub(crate) fn display(
+        &mut self,
+        f: &mut dyn Write,
+        num: usize,
+        rect: BBox<f32>,
+        kind: PlotKind,
+    ) -> fmt::Result {
+        use PlotKind::*;
+
+        match kind {
+            Area => self.display_area(f, num, rect),
+            Line => self.display_line(f, num, rect),
+            Scatter => self.display_scatter(f, num, rect),
+        }
     }
 }
 

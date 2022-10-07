@@ -8,7 +8,7 @@
 // FIXME
 #![allow(dead_code)]
 
-use std::fmt;
+use std::{fmt, fmt::Write};
 
 use pointy::BBox;
 
@@ -20,7 +20,7 @@ use crate::{
 
 /// Private module for sealed Axis trait
 mod sealed {
-    use std::fmt;
+    use std::{fmt, fmt::Write};
 
     use pointy::BBox;
 
@@ -28,13 +28,13 @@ mod sealed {
         fn split(&self, area: &mut BBox<f32>) -> BBox<f32>;
         fn display(
             &self,
-            f: &mut fmt::Formatter,
+            f: &mut dyn Write,
             rect: BBox<f32>,
             area: BBox<f32>,
         ) -> fmt::Result;
         fn display_grid(
             &self,
-            f: &mut fmt::Formatter,
+            f: &mut dyn Write,
             area: BBox<f32>,
         ) -> fmt::Result;
     }
@@ -72,7 +72,7 @@ impl sealed::Axis for Horizontal {
 
     fn display(
         &self,
-        f: &mut fmt::Formatter,
+        f: &mut dyn Write,
         mut rect: BBox<f32>,
         area: BBox<f32>,
     ) -> fmt::Result {
@@ -89,11 +89,7 @@ impl sealed::Axis for Horizontal {
         self.display_tick_labels(f, rect)
     }
 
-    fn display_grid(
-        &self,
-        f: &mut fmt::Formatter,
-        area: BBox<f32>,
-    ) -> fmt::Result {
+    fn display_grid(&self, f: &mut dyn Write, area: BBox<f32>) -> fmt::Result {
         write!(f, "<path class='grid-x' d='")?;
         for tick in self.ticks.iter() {
             let x = tick.x(self.edge, area, 0.0);
@@ -144,7 +140,7 @@ impl Horizontal {
 
     fn display_tick_lines(
         &self,
-        f: &mut fmt::Formatter,
+        f: &mut dyn Write,
         rect: BBox<f32>,
     ) -> fmt::Result {
         let x = rect.x_min();
@@ -172,7 +168,7 @@ impl Horizontal {
 
     fn display_tick_labels(
         &self,
-        f: &mut fmt::Formatter,
+        f: &mut dyn Write,
         rect: BBox<f32>,
     ) -> fmt::Result {
         let text = Text::new(Edge::Top).with_class_name("tick");
@@ -191,7 +187,7 @@ impl sealed::Axis for Vertical {
 
     fn display(
         &self,
-        f: &mut fmt::Formatter,
+        f: &mut dyn Write,
         mut rect: BBox<f32>,
         area: BBox<f32>,
     ) -> fmt::Result {
@@ -208,11 +204,7 @@ impl sealed::Axis for Vertical {
         self.display_tick_labels(f, rect)
     }
 
-    fn display_grid(
-        &self,
-        f: &mut fmt::Formatter,
-        area: BBox<f32>,
-    ) -> fmt::Result {
+    fn display_grid(&self, f: &mut dyn Write, area: BBox<f32>) -> fmt::Result {
         write!(f, "<path class='grid-y' d='")?;
         for tick in self.ticks.iter() {
             let y = tick.y(self.edge, area, 0.0);
@@ -263,7 +255,7 @@ impl Vertical {
 
     fn display_tick_lines(
         &self,
-        f: &mut fmt::Formatter,
+        f: &mut dyn Write,
         rect: BBox<f32>,
     ) -> fmt::Result {
         let (x, width) = match self.edge {
@@ -285,7 +277,7 @@ impl Vertical {
 
     fn display_tick_labels(
         &self,
-        f: &mut fmt::Formatter,
+        f: &mut dyn Write,
         rect: BBox<f32>,
     ) -> fmt::Result {
         let anchor = match self.edge {

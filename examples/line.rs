@@ -1,7 +1,7 @@
 use pointy::BBox;
 use splotch::{
     axis::{Horizontal, Vertical},
-    plot, Chart,
+    Chart, Plot,
 };
 
 fn main() {
@@ -19,14 +19,17 @@ fn main() {
         domain.extend(data_b.iter().cloned());
         domain
     };
-    let plot_a = plot::Line::new("Series A", &domain, &data_a);
-    let plot_b = plot::Line::new("Series B", &domain, &data_b);
+    let mut data_a = data_a.into_iter().map(Into::into);
+    let mut data_b = data_b.into_iter().map(Into::into);
+    let plot_a = Plot::new("Series A", &domain, &mut data_a);
+    let plot_b = Plot::new("Series B", &domain, &mut data_b);
     let chart = Chart::default()
         .with_title("Line Plot")
         .with_axis(Horizontal::new(domain).with_name("X Axis Name"))
         .with_axis(Vertical::new(domain).with_name("Y Axis Name"))
         .with_axis(Vertical::new(domain).on_right())
-        .with_plot(&plot_a)
-        .with_plot(&plot_b);
+        .with_line_plot(plot_a)
+        .with_line_plot(plot_b)
+        .render();
     print!("{chart}");
 }
