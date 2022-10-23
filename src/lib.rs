@@ -9,7 +9,7 @@
 //! let data = vec![(13.0, 74.0), (111.0, 37.0), (125.0, 52.0), (190.0, 66.0)];
 //! let domain = {
 //!     let mut domain = BBox::new(data.iter().cloned());
-//!     domain.extend([0.0, 200.0]);
+//!     domain.extend([(0.0, 200.0)]);
 //!     domain
 //! };
 //! let mut data = data.into_iter().map(Into::into);
